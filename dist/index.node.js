@@ -502,19 +502,6 @@ function getServerActionCookie(cookieName, cookieHandler) {
   }
   return "";
 }
-function extractCookieComponents(cookieValue) {
-  const components = cookieValue.split(";");
-  if (components.length > 0) {
-    const firstPart = components[0];
-    if (typeof firstPart === "string") {
-      const parts = firstPart.trim().split("=");
-      if (parts.length === 2 && typeof parts[0] === "string" && typeof parts[1] === "string") {
-        return { cookieName: parts[0], cookieData: parts[1] };
-      }
-    }
-  }
-  return null;
-}
 function setCookie(res, cookieValue) {
   if ("headers" in res && typeof res.headers.append === "function") {
     res.headers.append("set-cookie", cookieValue);
@@ -525,13 +512,6 @@ function setCookie(res, cookieValue) {
     existingSetCookie = [existingSetCookie.toString()];
   }
   res.setHeader("set-cookie", [...existingSetCookie, cookieValue]);
-}
-function setServerActionCookie(cookieValue, cookieHandler) {
-  const extracted = extractCookieComponents(cookieValue);
-  if (extracted !== null) {
-    const { cookieName, cookieData } = extracted;
-    cookieHandler.set(cookieName, cookieData);
-  }
 }
 function createSealData(_crypto = globalThis.crypto) {
   return async function sealData2(data, { password, ttl = fourteenDaysInSeconds }) {
@@ -678,13 +658,13 @@ function createGetServerActionIronSession(sealData2, unsealData2) {
         value: async function save(saveOptions) {
           const mergedOptions = mergeOptions(userSessionOptions, saveOptions);
           const seal2 = await sealData2(session, { password: passwordsMap, ttl: mergedOptions.ttl });
-          const cookieValue = (0, import_cookie.serialize)(mergedOptions.cookieName, seal2, mergedOptions.cookieOptions);
-          if (cookieValue.length > 4096) {
+          const cookieLength = mergedOptions.cookieName.length + seal2.length + JSON.stringify(mergedOptions.cookieOptions).length;
+          if (cookieLength > 4096) {
             throw new Error(
-              `iron-session: Cookie length is too big (${cookieValue.length} bytes), browsers will refuse it. Try to remove some data.`
+              `iron-session: Cookie length is too big (${cookieLength} bytes), browsers will refuse it. Try to remove some data.`
             );
           }
-          setServerActionCookie(cookieValue, cookieHandler);
+          cookieHandler.set(mergedOptions.cookieName, seal2, mergedOptions.cookieOptions);
         }
       },
       destroy: {
@@ -693,11 +673,8 @@ function createGetServerActionIronSession(sealData2, unsealData2) {
             delete session[key];
           });
           const mergedOptions = mergeOptions(userSessionOptions, destroyOptions);
-          const cookieValue = (0, import_cookie.serialize)(mergedOptions.cookieName, "", {
-            ...mergedOptions.cookieOptions,
-            maxAge: 0
-          });
-          setServerActionCookie(cookieValue, cookieHandler);
+          const cookieOptions = { ...mergedOptions.cookieOptions, maxAge: 0 };
+          cookieHandler.set(mergedOptions.cookieName, "", cookieOptions);
         }
       }
     });

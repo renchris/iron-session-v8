@@ -118,6 +118,23 @@ type Password = PasswordsMap | string;
 type RequestType = IncomingMessage | Request;
 type ResponseType = Response | ServerResponse;
 /**
+ * {@link https://wicg.github.io/cookie-store/#dictdef-cookielistitem CookieListItem}
+ * as specified by W3C.
+ */
+interface CookieListItem extends Pick<CookieSerializeOptions, 'domain' | 'path' | 'sameSite' | 'secure'> {
+    /** A string with the name of a cookie. */
+    name: string;
+    /** A string containing the value of the cookie. */
+    value: string;
+    /** A number of milliseconds or Date interface containing the expires of the cookie. */
+    expires?: CookieSerializeOptions['expires'] | number;
+}
+/**
+ * Superset of {@link CookieListItem} extending it with
+ * the `httpOnly`, `maxAge` and `priority` properties.
+ */
+type ResponseCookie = CookieListItem & Pick<CookieSerializeOptions, 'httpOnly' | 'maxAge' | 'priority'>;
+/**
  * The high-level type definition of the .get() and .set() methods
  * of { cookies() } from "next/headers"
  */
@@ -126,8 +143,18 @@ interface ICookieHandler {
         name: string;
         value: string;
     } | undefined;
-    set: (name: string, value: string) => void;
+    set: {
+        (name: string, value: string, cookie?: Partial<ResponseCookie>): void;
+        (options: ResponseCookie): void;
+    };
 }
+/**
+ * Set-Cookie Attributes do not include `encode`. We omit this from our `cookieOptions` type.
+ *
+ * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie
+ * @see https://developer.chrome.com/docs/devtools/application/cookies/
+ */
+type CookieOptions = Omit<CookieSerializeOptions, 'encode'>;
 interface IronSessionOptions {
     /**
      * The cookie name that will be used inside the browser. Make sure it's unique
@@ -165,7 +192,7 @@ interface IronSessionOptions {
      *
      * @see https://github.com/jshttp/cookie#options-1
      */
-    cookieOptions?: CookieSerializeOptions;
+    cookieOptions?: CookieOptions;
 }
 type OverridableOptions = Pick<IronSessionOptions, 'cookieOptions' | 'ttl'>;
 type IronSession<T> = T & {
