@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "iron-session",
-  "version": "8.0.0-alpha.0",
+  "name": "iron-session-v8",
+  "version": "8.0.0-renchris-v8",
   "description": "A runtime-agnostic library for stateless session management through secure, signed, and encrypted cookies.",
   "keywords": [
     "session",
@@ -15,8 +15,11 @@
     "deno",
     "bun"
   ],
-  "bugs": "https://github.com/vvo/iron-session/issues",
-  "repository": "github:vvo/iron-session",
+  "bugs": "https://github.com/renchris/iron-session/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/renchris/iron-session-v8.git"
+  },
   "funding": [
     "https://github.com/sponsors/vvo",
     "https://github.com/sponsors/brc-dd"
